@@ -1,0 +1,38 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Repository
+    Dahovitech\TranslatorBundle\Repository\TranslationRepository:
+        arguments:
+            - '@doctrine'
+
+    # Services
+    Dahovitech\TranslatorBundle\Service\TranslationManager:
+        arguments:
+            - '@doctrine.orm.entity_manager'
+            - '@Dahovitech\TranslatorBundle\Repository\TranslationRepository'
+            - '@translator'
+
+    # Controller
+    Dahovitech\TranslatorBundle\Controller\TranslationController:
+        arguments:
+            - '@Dahovitech\TranslatorBundle\Service\TranslationManager'
+        tags:
+            - { name: controller.service_arguments }
+
+    # Alias pour faciliter l'injection
+    dahovitech_translator.manager:
+        alias: Dahovitech\TranslatorBundle\Service\TranslationManager
+        public: true
+
+    dahovitech_translator.repository:
+        alias: Dahovitech\TranslatorBundle\Repository\TranslationRepository
+        public: true
+
+    dahovitech_translator.controller.translation:
+        alias: Dahovitech\TranslatorBundle\Controller\TranslationController
+        public: true
+
