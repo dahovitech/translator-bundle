@@ -1,0 +1,10 @@
+doctrine:
+    orm:
+        mappings:
+            DahovitechTranslatorBundle:
+                is_bundle: true
+                type: attribute
+                dir: 'Entity'
+                prefix: 'Dahovitech\TranslatorBundle\Entity'
+                alias: DahovitechTranslator
+

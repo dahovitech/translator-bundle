@@ -1,0 +1,5 @@
+dahovitech_translator_api:
+    resource: '@DahovitechTranslatorBundle/Controller/TranslationController.php'
+    type: attribute
+    prefix: '%dahovitech_translator.api_prefix%'
+

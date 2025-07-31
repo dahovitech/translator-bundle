@@ -1,0 +1,329 @@
+{% extends '@DahovitechTranslator/admin/base.html.twig' %}
+
+{% block title %}Liste des traductions - Administration{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-list text-primary"></i>
+            Traductions
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <a href="{{ path('dahovitech_translator_admin_edit') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Nouvelle traduction
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="locale" class="form-label">Langue</label>
+                    <select name="locale" id="locale" class="form-select">
+                        {% for loc in locales %}
+                            <option value="{{ loc }}" {% if loc == locale %}selected{% endif %}>
+                                {{ loc|upper }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="domain" class="form-label">Domaine</label>
+                    <select name="domain" id="domain" class="form-select">
+                        <option value="messages" {% if domain == 'messages' %}selected{% endif %}>Messages</option>
+                        <option value="validators" {% if domain == 'validators' %}selected{% endif %}>Validators</option>
+                        <option value="security" {% if domain == 'security' %}selected{% endif %}>Security</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Rechercher</label>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               placeholder="Rechercher une clé..." value="{{ search }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-table"></i>
+                Résultats ({{ translations|length }} traductions)
+            </h5>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="selectAll()">
+                    <i class="fas fa-check-square"></i> Tout sélectionner
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="deleteSelected()" disabled id="deleteSelectedBtn">
+                    <i class="fas fa-trash"></i> Supprimer sélection
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if translations is empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5>Aucune traduction trouvée</h5>
+                    <p class="text-muted">
+                        {% if search %}
+                            Aucun résultat pour "{{ search }}" dans {{ locale|upper }} / {{ domain }}
+                        {% else %}
+                            Aucune traduction disponible pour {{ locale|upper }} / {{ domain }}
+                        {% endif %}
+                    </p>
+                    <a href="{{ path('dahovitech_translator_admin_edit', {locale: locale, domain: domain}) }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Créer une traduction
+                    </a>
+                </div>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Clé</th>
+                                <th>Contenu</th>
+                                <th>Langue</th>
+                                <th>Domaine</th>
+                                <th width="150">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, content in translations %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="translation-checkbox" 
+                                               data-key="{{ key }}" data-locale="{{ locale }}" data-domain="{{ domain }}">
+                                    </td>
+                                    <td>
+                                        <code class="text-primary">{{ key }}</code>
+                                    </td>
+                                    <td>
+                                        <div class="translation-content" title="{{ content }}">
+                                            {{ content|length > 100 ? content|slice(0, 100) ~ '...' : content }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ locale|upper }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ domain }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ path('dahovitech_translator_admin_edit', {
+                                                key: key, 
+                                                locale: locale, 
+                                                domain: domain
+                                            }) }}" class="btn btn-outline-primary" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="deleteTranslation('{{ key }}', '{{ locale }}', '{{ domain }}')" 
+                                                    title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette traduction ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-warning"></i>
+                    Cette action est irréversible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+let currentDeleteData = null;
+const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+
+function deleteTranslation(key, locale, domain) {
+    currentDeleteData = { key, locale, domain };
+    deleteModal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (!currentDeleteData) return;
+    
+    const btn = this;
+    const originalText = btn.innerHTML;
+    showLoading(btn);
+    
+    fetch('{{ path('dahovitech_translator_admin_delete') }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: new URLSearchParams(currentDeleteData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading(btn, originalText);
+        deleteModal.hide();
+        
+        if (data.success) {
+            // Recharger la page pour mettre à jour la liste
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        hideLoading(btn, originalText);
+        deleteModal.hide();
+        alert('Erreur lors de la suppression');
+        console.error('Error:', error);
+    });
+});
+
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.translation-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateDeleteButton();
+}
+
+function selectAll() {
+    document.getElementById('selectAllCheckbox').checked = true;
+    toggleSelectAll();
+}
+
+function updateDeleteButton() {
+    const checkedBoxes = document.querySelectorAll('.translation-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    
+    deleteBtn.disabled = checkedBoxes.length === 0;
+    deleteBtn.textContent = checkedBoxes.length > 0 
+        ? `Supprimer (${checkedBoxes.length})` 
+        : 'Supprimer sélection';
+}
+
+function deleteSelected() {
+    const checkedBoxes = document.querySelectorAll('.translation-checkbox:checked');
+    
+    if (checkedBoxes.length === 0) return;
+    
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer ${checkedBoxes.length} traduction(s) ?`)) {
+        return;
+    }
+    
+    const deletePromises = Array.from(checkedBoxes).map(checkbox => {
+        const key = checkbox.dataset.key;
+        const locale = checkbox.dataset.locale;
+        const domain = checkbox.dataset.domain;
+        
+        return fetch('{{ path('dahovitech_translator_admin_delete') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new URLSearchParams({ key, locale, domain })
+        }).then(response => response.json());
+    });
+    
+    Promise.all(deletePromises)
+        .then(results => {
+            const successCount = results.filter(r => r.success).length;
+            const errorCount = results.length - successCount;
+            
+            if (successCount > 0) {
+                alert(`${successCount} traduction(s) supprimée(s) avec succès`);
+            }
+            if (errorCount > 0) {
+                alert(`${errorCount} erreur(s) lors de la suppression`);
+            }
+            
+            location.reload();
+        })
+        .catch(error => {
+            alert('Erreur lors de la suppression en lot');
+            console.error('Error:', error);
+        });
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Mettre à jour le bouton de suppression quand les checkboxes changent
+    document.querySelectorAll('.translation-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateDeleteButton);
+    });
+    
+    // Auto-submit du formulaire de filtre quand on change la locale ou le domaine
+    document.getElementById('locale').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('domain').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    // Recherche en temps réel (avec délai)
+    let searchTimeout;
+    document.getElementById('search').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            this.form.submit();
+        }, 500);
+    });
+});
+</script>
+{% endblock %}
+
